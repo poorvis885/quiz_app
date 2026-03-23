@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Smart Quiz Platform</title>
+
+<style>
+body {
+    font-family: 'Segoe UI';
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    color: white;
+    text-align: center;
+}
+
+.dark {
+    background: #121212;
+}
+
+.container {
+    background: rgba(255,255,255,0.1);
+    padding: 20px;
+    width: 450px;
+    margin: 40px auto;
+    border-radius: 15px;
+}
+
+button, select {
+    padding: 10px;
+    margin: 8px;
+    width: 100%;
+    border-radius: 8px;
+    border: none;
+    background: #ffffff22;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    transform: scale(1.05);
+    background: #ffffff44;
+}
+
+.hide { display: none; }
+
+.correct { background: #00ff88 !important; }
+.wrong { background: #ff4d4d !important; }
+
+#progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #ffffff33;
+}
+
+#progress {
+    height: 8px;
+    background: #00ffcc;
+    width: 0%;
+}
+
+#stats {
+    text-align: left;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+<h1>Smart Quiz Platform</h1>
+
+<button onclick="toggleTheme()">🌙 Theme</button>
+<button onclick="showDashboard()">📊 Dashboard</button>
+
+<div id="start-screen">
+    <select id="category"></select>
+
+    <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+    </select>
+
+    <button onclick="startQuiz()">Start Quiz</button>
+</div>
+
+<div id="quiz-screen" class="hide">
+    <div id="progress-bar"><div id="progress"></div></div>
+    <p id="timer"></p>
+    <h2 id="question"></h2>
+    <div id="answers"></div>
+    <button onclick="nextQuestion()">Next</button>
+</div>
+
+<div id="result-screen" class="hide">
+    <h2 id="score"></h2>
+    <button onclick="location.reload()">Restart</button>
+</div>
+
+<div id="dashboard" class="hide">
+    <h2>Your Progress</h2>
+    <div id="stats"></div>
+    <button onclick="location.reload()">Back</button>
+</div>
+
+</div>
+
+<script>
+const questionBank = {
+
+technology: [
+{q:"AI stands for?",o:["Artificial Intelligence","Auto Input","None","Algo"],a:"Artificial Intelligence"},
+{q:"Cloud example?",o:["AWS","CPU","RAM","SSD"],a:"AWS"},
+{q:"5G is related to?",o:["Network","Storage","CPU","AI"],a:"Network"},
+{q:"IoT means?",o:["Internet of Things","Input Tool","Internal Tech","None"],a:"Internet of Things"},
+{q:"GPU used for?",o:["Graphics","Storage","Sound","Network"],a:"Graphics"},
+{q:"Blockchain used in?",o:["Crypto","HTML","CSS","DB"],a:"Crypto"},
+{q:"Cybersecurity protects?",o:["Data","Food","Water","None"],a:"Data"},
+{q:"Big Data means?",o:["Large Data","Small Data","Text","Image"],a:"Large Data"},
+{q:"VR stands for?",o:["Virtual Reality","Video Run","Visual RAM","None"],a:"Virtual Reality"},
+{q:"API is?",o:["Interface","Language","OS","Tool"],a:"Interface"}
+],
+
+gk: [
+{q:"Capital of India?",o:["Delhi","Mumbai","Chennai","Kolkata"],a:"Delhi"},
+{q:"National Animal?",o:["Tiger","Lion","Dog","Elephant"],a:"Tiger"},
+{q:"PM of India (2024)?",o:["Modi","Rahul","Shah","None"],a:"Modi"},
+{q:"Currency of India?",o:["Rupee","Dollar","Euro","Yen"],a:"Rupee"},
+{q:"Largest continent?",o:["Asia","Africa","Europe","Australia"],a:"Asia"},
+{q:"National Bird?",o:["Peacock","Crow","Parrot","Sparrow"],a:"Peacock"},
+{q:"Ganga flows in?",o:["India","USA","UK","China"],a:"India"},
+{q:"Independence year?",o:["1947","1950","1930","1960"],a:"1947"},
+{q:"Largest ocean?",o:["Pacific","Atlantic","Indian","Arctic"],a:"Pacific"},
+{q:"Sun is a?",o:["Star","Planet","Moon","Comet"],a:"Star"}
+],
+
+maths: [
+{q:"2+2?",o:["3","4","5","6"],a:"4"},
+{q:"5x5?",o:["20","25","30","35"],a:"25"},
+{q:"10/2?",o:["2","5","10","20"],a:"5"},
+{q:"Square of 6?",o:["30","36","40","42"],a:"36"},
+{q:"7+8?",o:["13","14","15","16"],a:"15"},
+{q:"9x3?",o:["18","21","27","30"],a:"27"},
+{q:"12-5?",o:["5","6","7","8"],a:"7"},
+{q:"100/10?",o:["5","10","20","25"],a:"10"},
+{q:"Cube of 2?",o:["6","8","10","12"],a:"8"},
+{q:"15+10?",o:["20","25","30","35"],a:"25"}
+],
+
+english: [
+{q:"Synonym of Happy?",o:["Sad","Joyful","Angry","Cry"],a:"Joyful"},
+{q:"Antonym of Fast?",o:["Quick","Slow","Rapid","Speed"],a:"Slow"},
+{q:"Big means?",o:["Small","Large","Tiny","Short"],a:"Large"},
+{q:"Opposite of Good?",o:["Bad","Nice","Fine","Cool"],a:"Bad"},
+{q:"Happy = ?",o:["Joy","Sad","Cry","Pain"],a:"Joy"},
+{q:"Fast = ?",o:["Quick","Slow","Stop","Wait"],a:"Quick"},
+{q:"Run is?",o:["Verb","Noun","Adj","Adv"],a:"Verb"},
+{q:"Blue is?",o:["Color","Verb","Noun","Adj"],a:"Color"},
+{q:"He ___ going",o:["is","are","am","be"],a:"is"},
+{q:"I ___ a student",o:["am","is","are","be"],a:"am"}
+],
+
+sql: [
+{q:"SQL full form?",o:["Structured Query Language","Simple","Server","None"],a:"Structured Query Language"},
+{q:"SELECT used for?",o:["Insert","Fetch","Delete","Update"],a:"Fetch"},
+{q:"INSERT does?",o:["Add","Delete","Fetch","Update"],a:"Add"},
+{q:"DELETE does?",o:["Remove","Add","Fetch","Update"],a:"Remove"},
+{q:"UPDATE does?",o:["Modify","Add","Delete","Fetch"],a:"Modify"},
+{q:"Table means?",o:["Data storage","CPU","RAM","OS"],a:"Data storage"},
+{q:"Primary key?",o:["Unique","Duplicate","Null","None"],a:"Unique"},
+{q:"JOIN used for?",o:["Combine","Split","Delete","Add"],a:"Combine"},
+{q:"WHERE used for?",o:["Filter","Add","Delete","Update"],a:"Filter"},
+{q:"Database is?",o:["Collection","CPU","RAM","OS"],a:"Collection"}
+],
+
+programming: [
+{q:"Python is?",o:["Language","Snake","Game","OS"],a:"Language"},
+{q:"C++ is?",o:["Language","DB","Tool","OS"],a:"Language"},
+{q:"Java runs on?",o:["JVM","CPU","RAM","OS"],a:"JVM"},
+{q:"Loop used for?",o:["Repeat","Stop","Break","None"],a:"Repeat"},
+{q:"Variable stores?",o:["Data","Code","CPU","OS"],a:"Data"},
+{q:"Function is?",o:["Block","Loop","Var","None"],a:"Block"},
+{q:"Array stores?",o:["Multiple values","Single","None","OS"],a:"Multiple values"},
+{q:"Compiler does?",o:["Translate","Delete","Run","Stop"],a:"Translate"},
+{q:"Bug means?",o:["Error","Success","Code","None"],a:"Error"},
+{q:"IDE is?",o:["Tool","Language","OS","None"],a:"Tool"}
+],
+
+aiml: [
+{q:"ML means?",o:["Machine Learning","Manual","None","Logic"],a:"Machine Learning"},
+{q:"DL means?",o:["Deep Learning","Data","None","Digital"],a:"Deep Learning"},
+{q:"AI is?",o:["Smart tech","Dumb","None","Tool"],a:"Smart tech"},
+{q:"Model is?",o:["Algorithm","Data","CPU","None"],a:"Algorithm"},
+{q:"Training means?",o:["Learning","Deleting","Stopping","None"],a:"Learning"},
+{q:"Dataset is?",o:["Data collection","CPU","RAM","OS"],a:"Data collection"},
+{q:"Prediction means?",o:["Output","Input","Stop","None"],a:"Output"},
+{q:"Supervised learning uses?",o:["Labels","No labels","None","Random"],a:"Labels"},
+{q:"Unsupervised uses?",o:["No labels","Labels","None","CPU"],a:"No labels"},
+{q:"Overfitting means?",o:["Too fit","Under","None","Random"],a:"Too fit"}
+]
+
+};
+
+let questions=[],index=0,score=0,timer,time=10,category="";
+
+window.onload=()=>{
+    let cat=document.getElementById("category");
+    Object.keys(questionBank).forEach(c=>{
+        let opt=document.createElement("option");
+        opt.value=c;
+        opt.text=c.toUpperCase();
+        cat.appendChild(opt);
+    });
+};
+
+function startQuiz(){
+    category=document.getElementById("category").value;
+    questions=shuffle(questionBank[category]);
+
+    index=0; score=0;
+
+    document.getElementById("start-screen").classList.add("hide");
+    document.getElementById("quiz-screen").classList.remove("hide");
+
+    showQ();
+}
+
+function showQ(){
+    resetTimer();
+
+    let q=questions[index];
+    document.getElementById("question").innerText=q.q;
+
+    let ansDiv=document.getElementById("answers");
+    ansDiv.innerHTML="";
+
+    shuffle(q.o).forEach(opt=>{
+        let btn=document.createElement("button");
+        btn.innerText=opt;
+        btn.onclick=()=>checkAns(btn,opt,q.a);
+        ansDiv.appendChild(btn);
+    });
+
+    document.getElementById("progress").style.width=((index+1)/questions.length)*100+"%";
+}
+
+function checkAns(btn,selected,correct){
+    let btns=document.querySelectorAll("#answers button");
+    btns.forEach(b=>{
+        b.disabled=true;
+        if(b.innerText===correct) b.classList.add("correct");
+        else b.classList.add("wrong");
+    });
+
+    if(selected===correct) score++;
+    clearInterval(timer);
+}
+
+function nextQuestion(){
+    index++;
+    if(index<questions.length) showQ();
+    else showResult();
+}
+
+function showResult(){
+    document.getElementById("quiz-screen").classList.add("hide");
+    document.getElementById("result-screen").classList.remove("hide");
+
+    let data=JSON.parse(localStorage.getItem("progress"))||{};
+    data[category]=data[category]||[];
+    data[category].push(score);
+
+    localStorage.setItem("progress",JSON.stringify(data));
+
+    document.getElementById("score").innerText=`Score: ${score}/${questions.length}`;
+}
+
+function showDashboard(){
+    document.getElementById("start-screen").classList.add("hide");
+    document.getElementById("dashboard").classList.remove("hide");
+
+    let data=JSON.parse(localStorage.getItem("progress"))||{};
+    let stats=document.getElementById("stats");
+    stats.innerHTML="";
+
+    for(let c in data){
+        let scores=data[c];
+        let avg=(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(2);
+        stats.innerHTML+=`<p><b>${c}</b> → Attempts: ${scores.length}, Avg: ${avg}</p>`;
+    }
+}
+
+function resetTimer(){
+    clearInterval(timer);
+    time=10;
+    document.getElementById("timer").innerText="Time: "+time;
+
+    timer=setInterval(()=>{
+        time--;
+        document.getElementById("timer").innerText="Time: "+time;
+
+        if(time===0){
+            clearInterval(timer);
+            nextQuestion();
+        }
+    },1000);
+}
+
+function shuffle(arr){
+    return arr.sort(()=>Math.random()-0.5);
+}
+
+function toggleTheme(){
+    document.body.classList.toggle("dark");
+}
+</script>
+
+</body>
+</html>
